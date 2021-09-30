@@ -1,16 +1,5 @@
-import React from 'react';
-import {
-  Button,
-  Dimensions,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-  useColorScheme,
-} from 'react-native';
-
+import React, {useEffect, useState} from 'react';
+import {Dimensions, StyleSheet, Text, View} from 'react-native';
 import {
   Colors,
   DebugInstructions,
@@ -18,107 +7,43 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
+import MapView, {Circle} from 'react-native-maps';
+import Geolocation, {GeoPosition} from 'react-native-geolocation-service';
 
-import MapView from 'react-native-maps';
+const App = () => {
+  const [LocationPoints, setLocationPoints] = useState<GeoPosition[]>([]);
+  const [currentLocation, setCurrentLocation] = useState<GeoPosition | null>(
+    null,
+  );
 
-import {getCurrentPosition} from './utils/getCurrentPosition';
+  useEffect(() => {
+    if (!currentLocation) {
+      return;
+    }
+    setLocationPoints([...LocationPoints, currentLocation]);
+  }, [currentLocation]);
 
-// const Section: React.FC<{
-//   title: string;
-// }> = ({children, title}) => {
-//   const isDarkMode = useColorScheme() === 'dark';
-//   return (
-//     <View style={styles.sectionContainer}>
-//       <Text
-//         style={[
-//           styles.sectionTitle,
-//           {
-//             color: isDarkMode ? Colors.white : Colors.black,
-//           },
-//         ]}
-//       >
-//         {title}
-//       </Text>
-//       <Text
-//         style={[
-//           styles.sectionDescription,
-//           {
-//             color: isDarkMode ? Colors.light : Colors.dark,
-//           },
-//         ]}
-//       >
-//         {children}
-//       </Text>
-//     </View>
-//   );
-// };
+  useEffect(() => {
+    Geolocation.watchPosition(
+      location => {
+        setCurrentLocation(location);
+      },
+      error => {
+        setCurrentLocation(null);
+        console.log(error.code, error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        interval: 1,
+        fastestInterval: 1,
+        distanceFilter: 0.1,
+      },
+    );
+  }, []);
 
-// const App = () => {
-//   const isDarkMode = useColorScheme() === 'dark';
-
-//   const backgroundStyle = {
-//     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-//   };
-
-//   return (
-//     <SafeAreaView style={backgroundStyle}>
-//       <Button
-//         title="Console log current location"
-//         onPress={getCurrentPosition}
-//       />
-//       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-//       <ScrollView
-//         contentInsetAdjustmentBehavior="automatic"
-//         style={backgroundStyle}
-//       >
-//         <Header />
-//         <View
-//           style={{
-//             backgroundColor: isDarkMode ? Colors.black : Colors.white,
-//           }}
-//         >
-//           <Section title="Step One">
-//             Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-//             screen and then come back to see your edits.
-//           </Section>
-//           <Section title="See Your Changes">
-//             <ReloadInstructions />
-//           </Section>
-//           <Section title="Debug">
-//             <DebugInstructions />
-//           </Section>
-//           <Section title="Learn More">
-//             Read the docs to discover what to do next:
-//           </Section>
-//           <LearnMoreLinks />
-//         </View>
-//       </ScrollView>
-//     </SafeAreaView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   sectionContainer: {
-//     marginTop: 32,
-//     paddingHorizontal: 24,
-//   },
-//   sectionTitle: {
-//     fontSize: 24,
-//     fontWeight: '600',
-//   },
-//   sectionDescription: {
-//     marginTop: 8,
-//     fontSize: 18,
-//     fontWeight: '400',
-//   },
-//   highlight: {
-//     fontWeight: '700',
-//   },
-// });
-
-export default function App2() {
   return (
     <View style={styles.container}>
+      <Text>{LocationPoints.length}</Text>
       <MapView
         style={styles.map}
         initialRegion={{
@@ -127,10 +52,23 @@ export default function App2() {
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
-      />
+      >
+        {LocationPoints.length > 0
+          ? LocationPoints.map((location, i) => (
+              <Circle
+                center={{
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                }}
+                radius={1}
+                key={i}
+              />
+            ))
+          : null}
+      </MapView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -144,3 +82,5 @@ const styles = StyleSheet.create({
     height: Dimensions.get('window').height,
   },
 });
+
+export default App;
